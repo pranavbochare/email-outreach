@@ -8,7 +8,6 @@ const client = buildClient(config.brevo.baseUrl, {
 });
 
 export async function sendOutreach(contacts) {
-  console.log("🔥🔥🔥🔥🔥🔥 sendOutreach ---------> ", contacts);
   log.stage(4, "Brevo — Sending personalized outreach emails");
 
   if (config.pipeline.dryRun) {
@@ -18,11 +17,7 @@ export async function sendOutreach(contacts) {
   const results = { sent: [], failed: [] };
 
   for (const contact of contacts) {
-    console.log("🔥🔥🔥🔥🔥🔥 contact individual ---------> ", contact);
     const { subject, body } = generateEmail(contact);
-
-    console.log("🔥🔥🔥🔥🔥 subject---------> ", subject);
-    console.log("🔥🔥🔥🔥🔥 body ----------> ", body);
 
     log.info(`Sending to ${contact.name} <${contact.email.email}> @ ${contact.company}…`);
     log.dim(`  Subject: "${subject}"`);
