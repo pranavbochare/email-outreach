@@ -1,164 +1,311 @@
-### Automated Outreach Pipeline
+# Automated Outreach Pipeline
 
-# Working -> One input. Four stages. Zero human touchpoints
+## One Input. Four Stages. Zero Human Touchpoints.
 
-> Type a domain. The pipeline does the rest — finding lookalikes, surfacing decision-makers, resolving verified emails, and firing personalized outreach — automatically.
+Type a domain. The pipeline does the rest — finding lookalike companies, surfacing decision-makers, resolving verified work emails, and sending personalized outreach automatically.
+
+---
 
 # Architecture
 
-    company.domain
-          │
-          ▼
+```text
+company.domain
+      │
+      ▼
 ┌─────────────────────┐
-│ Stage 1 · Ocean.io │ seed domain → lookalike company domains
+│ Stage 1 · Ocean.io │
+│ Seed domain → lookalike company domains
 └──────────┬──────────┘
-│ [{ domain, name, industry, size }]
-▼
+           │
+           ▼
+[{ domain, name, industry, size }]
+
 ┌──────────────────────┐
-│ Stage 2 · Prospeo │ domains → C-suite/VP contacts + LinkedIn URLs
+│ Stage 2 · Prospeo    │
+│ Domains → C-suite/VP contacts + LinkedIn URLs
 └──────────┬───────────┘
-│ [{ name, title, linkedinUrl, company, ... }]
-▼
+           │
+           ▼
+[{ name, title, linkedinUrl, company, ... }]
+
 ┌───────────────────────┐
-│ Stage 3 · Eazyreach │ LinkedIn URLs → verified work emails -> done by prospeo
+│ Stage 3 · Eazyreach   │
+│ LinkedIn URLs → verified work emails
+│ (currently handled by Prospeo)
 └──────────┬────────────┘
-│ [{ ...contact, email, confidence }]
-▼
+           │
+           ▼
+[{ ...contact, email, confidence }]
+
 ┌──────────────────────────┐
-│ ⚠ Safety Checkpoint │ human reviews summary, confirms send
+│ ⚠ Safety Checkpoint      │
+│ Human reviews summary    │
+│ Confirms before sending  │
 └──────────┬───────────────┘
-│ confirmed
-▼
+           │
+           ▼
+confirmed
+
 ┌───────────────────────┐
-│ Stage 4 · Brevo │ sends personalized cold email per contact
+│ Stage 4 · Brevo       │
+│ Personalized outreach │
 └───────────────────────┘
-│
-▼
+           │
+           ▼
 reports
+```
 
-# concept
+---
 
-Every stage's output is the next stage's input. No manual copy-paste. No spreadsheets. One command runs the whole chain.
+# Concept
+
+Every stage's output becomes the next stage's input.
+
+No manual copy-paste.
+
+No spreadsheets.
+
+One command runs the entire workflow.
+
+---
 
 # Quick Start
 
-# create company email
+## Create Company Email
 
-- using namecheap for domain name
-- using cloudflare for email routing
+* Purchase a domain using Namecheap
+* Configure email routing using Cloudflare
 
-# 1. Install dependencies
+---
+
+## 1. Install Dependencies
 
 ```bash
 npm install
 ```
 
-# 2. Configure environment
+---
+
+## 2. Configure Environment
 
 ```bash
 cp .env.example .env
 ```
 
-Open `.env` and fill in your API keys:
+Open `.env` and provide the required API keys.
 
-| Variable             | Where to get it                                              |
-| -------------------- | ------------------------------------------------------------ | 
-| `OCEAN_API_KEY`      | [ocean.io](https://ocean.io) → Settings → API                |
-| `PROSPEO_API_KEY`    | [app.prospeo.io/api](https://app.prospeo.io/api)             |
-| `EAZYREACH_API_KEY`  | [eazyreach.app](https://eazyreach.app) → API                 | -> not in use but added 
-| `BREVO_API_KEY`      | [app.brevo.com](https://app.brevo.com) → Settings → API Keys |
-| `BREVO_SENDER_EMAIL` | Your verified sender email in Brevo                          |
+| Variable             | Where to get it                                                         |
+| -------------------- | ----------------------------------------------------------------------- |
+| `OCEAN_API_KEY`      | ocean.io → Settings → API                                               |
+| `PROSPEO_API_KEY`    | app.prospeo.io/api                                                      |
+| `EAZYREACH_API_KEY`  | eazyreach.app → API *(currently not used but added for future support)* |
+| `BREVO_API_KEY`      | app.brevo.com → Settings → API Keys                                     |
+| `BREVO_SENDER_EMAIL` | Verified sender email configured in Brevo                               |
 
-# 3. Run the pipeline
+---
+
+## 3. Run the Pipeline
+
+### Interactive Mode
 
 ```bash
-# Interactive (will prompt for domain)
 node src/index.js
+```
 
-# Pass domain directly
+### Pass Domain Directly
+
+```bash
 node src/index.js stripe.com
+```
 
-# Dry run — simulates everything, skips actual sending
+### Dry Run
+
+Simulates the complete workflow without sending emails.
+
+```bash
 DRY_RUN=true node src/index.js stripe.com
+```
+
+---
 
 # Project Structure
 
+```text
 vocallabs-outreach/
 ├── src/
-│   ├── index.js                  ← orchestrator / entry point
+│   ├── index.js
+│   │   └── Orchestrator / entry point
+│   │
 │   ├── stages/
-│   │   ├── 01-ocean.js           ← Stage 1: lookalike discovery
-│   │   ├── 02-prospeo.js         ← Stage 2: decision-maker search
-│   │   ├── 03-eazyreach.js       ← Stage 3: email resolution   -> done buy prospeo
-│   │   └── 04-brevo.js           ← Stage 4: outreach delivery
+│   │   ├── 01-ocean.js
+│   │   │   └── Stage 1: Lookalike discovery
+│   │   │
+│   │   ├── 02-prospeo.js
+│   │   │   └── Stage 2: Decision-maker search
+│   │   │
+│   │   ├── 03-eazyreach.js
+│   │   │   └── Stage 3: Email resolution
+│   │   │      (currently handled by Prospeo)
+│   │   │
+│   │   └── 04-brevo.js
+│   │       └── Stage 4: Outreach delivery
+│   │
 │   └── utils/
-│       ├── logger.js             ← pretty terminal output
-│       ├── http.js               ← retry logic + rate-limit handling
-│       ├── emailCopy.js          ← personalized email generator
-│       ├── checkpoint.js         ← pre-send safety review
-│       └── report.js             ← JSON run report
+│       ├── logger.js
+│       │   └── Pretty terminal output
+│       │
+│       ├── http.js
+│       │   └── Retry logic + rate-limit handling
+│       │
+│       ├── emailCopy.js
+│       │   └── Personalized email generation
+│       │
+│       ├── checkpoint.js
+│       │   └── Pre-send safety review
+│       │
+│       └── report.js
+│           └── JSON run report generation
+│
 ├── config/
-│   └── index.js                  ← env validation + config object
-├── reports/                      ← auto-created, one JSON per run
+│   └── index.js
+│       └── Environment validation + config
+│
+├── reports/
+│   └── Auto-created timestamped reports
+│
 ├── .env.example
 ├── package.json
 └── README.md
+```
 
-# Why one stage = one file?
+---
 
-- Each stage is independently testable and swappable. If Ocean.io's API changes or you want to replace Prospeo with Apollo, you touch exactly one file.
+# Why One Stage = One File?
 
-# Resilience to messy data
+Each stage is independently testable and easily replaceable.
 
-- Missing LinkedIn URLs → contact skipped, rest of pipeline continues
-- Invalid/undeliverable emails → dropped before the send stage
-- Any single-company failure in Stage 2/3 → logged and skipped; pipeline doesn't crash
-- Duplicate LinkedIn profiles → de-duplicated before email resolution
+For example:
 
-# Safety checkpoint
+* If Ocean.io changes its API, only `01-ocean.js` needs updating.
+* If you decide to replace Prospeo with Apollo, only `02-prospeo.js` changes.
+* The rest of the pipeline remains untouched.
 
-- Before any email fires, the pipeline pauses and displays a table of every recipient (name, title, company, email, confidence score). The user must explicitly confirm. Set `DRY_RUN=true` to simulate the full run without ever sending.
+This keeps the system modular, maintainable, and scalable.
 
-# Email personalization
+---
 
-`src/utils/emailCopy.js` generates copy that's specific to each contact:
+# Resilience to Messy Data
 
-- **First name** extracted from full name
-- **Title-aware hook** (CEO/Founder gets different framing than VP)
-- **Industry context** woven into the body
-- **Subject line rotation** (5 variants, deterministically chosen per company) to avoid pattern-based spam flags
+The pipeline is designed to continue operating even when individual records fail.
 
-### Reports
+### Handled Automatically
 
-Every run writes a timestamped JSON to `reports/` with the full summary — what was sent, to whom, message IDs, and any failures. Useful for follow-up tracking.
+* Missing LinkedIn URLs → contact skipped
+* Invalid or undeliverable emails → removed before send stage
+* Single-company failure in Stage 2 or Stage 3 → logged and skipped
+* Duplicate LinkedIn profiles → automatically de-duplicated
 
-## Configuration Reference
+The pipeline never crashes because of a single bad record.
 
-All options live in `.env`:
+---
 
-| Variable                   | Default | Description                        |
-| -------------------------- | ------- | ---------------------------------- |
-| `MAX_LOOKALIKES`           | `10`    | Companies returned by Ocean.io     |
-| `MAX_CONTACTS_PER_COMPANY` | `3`     | Decision-makers fetched per domain |
-| `RATE_LIMIT_DELAY_MS`      | `1000`  | ms pause between API calls         |
-| `DRY_RUN`                  | `false` | Skip actual email send when `true` |
+# Safety Checkpoint
 
+Before any email is sent:
 
-## Edge Cases Handled
+1. The pipeline pauses.
+2. A table is displayed showing:
 
-| Scenario                          | Behaviour                                   |
-| --------------------------------- | ------------------------------------------- |
-| Ocean.io returns 0 results        | Pipeline exits early with clear error       |
-| Company has no decision-makers    | Logged, skipped — other companies continue  |
-| LinkedIn URL missing              | Contact dropped at Stage 3                  |
-| Email marked invalid by Eazyreach | Contact dropped before send                 |
-| Brevo send fails for one contact  | Logged to report, rest of sends continue    |
-| API rate limit (429)              | Respects Retry-After, retries automatically |
-| Network timeout                   | 3 retries with back-off, then error logged  |
-| Duplicate LinkedIn profiles       | De-duplicated after Stage 2                 |
+   * Name
+   * Title
+   * Company
+   * Email
+   * Confidence Score
+3. The user explicitly confirms the send.
 
-# Improvements
+For testing:
 
-- can take help of AI to write personalized emails.
-- if we want to handle maximum companies and contacts then efficient code structure.
-- we can add ui to enter company name and show all history of emails send instead of brevo.
+```bash
+DRY_RUN=true
+```
+
+runs the entire workflow without sending emails.
+
+---
+
+# Email Personalization
+
+`src/utils/emailCopy.js` generates contact-specific outreach.
+
+### Personalization Signals
+
+* First name extracted automatically
+* Title-aware messaging
+
+  * CEO / Founder messaging differs from VP messaging
+* Industry-specific context included in email body
+* Subject line rotation
+
+### Subject Rotation
+
+Five deterministic subject variations are used per company to reduce pattern-based spam detection.
+
+---
+
+# Reports
+
+Every run generates a timestamped JSON report inside `reports/`.
+
+The report includes:
+
+* Recipients
+* Email addresses
+* Message IDs
+* Successes
+* Failures
+* Execution summary
+
+Useful for follow-ups, auditing, and troubleshooting.
+
+---
+
+# Configuration Reference
+
+All configuration is managed through `.env`.
+
+| Variable                   | Default | Description                         |
+| -------------------------- | ------- | ----------------------------------- |
+| `MAX_LOOKALIKES`           | `10`    | Companies returned by Ocean.io      |
+| `MAX_CONTACTS_PER_COMPANY` | `3`     | Decision-makers fetched per company |
+| `RATE_LIMIT_DELAY_MS`      | `1000`  | Delay between API calls             |
+| `DRY_RUN`                  | `false` | Skip email delivery when enabled    |
+
+---
+
+# Edge Cases Handled
+
+| Scenario                          | Behaviour                          |
+| --------------------------------- | ---------------------------------- |
+| Ocean.io returns 0 results        | Pipeline exits with clear error    |
+| Company has no decision-makers    | Logged and skipped                 |
+| LinkedIn URL missing              | Contact dropped before enrichment  |
+| Email marked invalid by Eazyreach | Contact dropped before send        |
+| Brevo send fails for one contact  | Logged, remaining emails continue  |
+| API rate limit (429)              | Respects Retry-After and retries   |
+| Network timeout                   | 3 retries with exponential backoff |
+| Duplicate LinkedIn profiles       | Automatically de-duplicated        |
+
+---
+
+# Future Improvements
+
+* Use AI to generate more personalized email copy.
+* Improve throughput for handling larger company and contact volumes.
+* Add a UI for:
+
+  * Entering target companies
+  * Reviewing recipients
+  * Viewing historical outreach activity
+  * Managing reports instead of relying solely on Brevo
+* Add campaign analytics and reply tracking.
+* Support additional enrichment providers (Apollo, Clay, etc.).
