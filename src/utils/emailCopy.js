@@ -46,10 +46,7 @@ I'd love to show you a live demo — 15 minutes, no deck.
 Would Thursday or Friday this week work for a quick call?
 
 Best,
-[Your Name]
-[Your Title] · Vocallabs
-[your@domain.com]
-[Phone / Calendar link]
+pranav @ Vocallabs
 
 P.S. — Happy to send a short Loom walkthrough first if that's easier.
 `;

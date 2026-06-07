@@ -61,6 +61,7 @@ async function run() {
   let contacts;
   try {
     contacts = await findDecisionMakers(companies);
+    console.log("🔥🔥🔥🔥🔥🔥 contacts ---------> ", contacts);
   } catch (err) {
     log.error(`Stage 2 failed: ${err.message}`);
     process.exit(1);
@@ -75,6 +76,7 @@ async function run() {
   const resolved = contacts; // Use Prospeo contacts directly as resolved
   log.stage(3, "Email resolution — using Prospeo data (Eazyreach unavailable)");
   log.success(`Email data ready: ${resolved.length} contacts`);
+  console.log("🔥🔥🔥🔥🔥🔥 resolved ---------> ", resolved);
 
   if (resolved.length === 0) {
     log.error("No contacts with email data. Cannot continue.");
@@ -97,6 +99,7 @@ async function run() {
     process.exit(1);
   }
 
+  console.log("🔥🔥🔥🔥🔥🔥 results ---------> ", results);
   const report = writeReport({ seedDomain, companies, contacts: resolved, results });
   printFinalSummary(report);
 }

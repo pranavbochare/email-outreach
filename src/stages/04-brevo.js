@@ -8,6 +8,7 @@ const client = buildClient(config.brevo.baseUrl, {
 });
 
 export async function sendOutreach(contacts) {
+  console.log("🔥🔥🔥🔥🔥🔥 sendOutreach ---------> ", contacts);
   log.stage(4, "Brevo — Sending personalized outreach emails");
 
   if (config.pipeline.dryRun) {
@@ -17,9 +18,13 @@ export async function sendOutreach(contacts) {
   const results = { sent: [], failed: [] };
 
   for (const contact of contacts) {
+    console.log("🔥🔥🔥🔥🔥🔥 contact individual ---------> ", contact);
     const { subject, body } = generateEmail(contact);
 
-    log.info(`Sending to ${contact.name} <${contact.email}> @ ${contact.company}…`);
+    console.log("🔥🔥🔥🔥🔥 subject---------> ", subject);
+    console.log("🔥🔥🔥🔥🔥 body ----------> ", body);
+
+    log.info(`Sending to ${contact.name} <${contact.email.email}> @ ${contact.company}…`);
     log.dim(`  Subject: "${subject}"`);
 
     if (config.pipeline.dryRun) {
@@ -36,20 +41,20 @@ export async function sendOutreach(contacts) {
               name: config.brevo.senderName,
               email: config.brevo.senderEmail,
             },
-            to: [{ email: contact.email, name: contact.name }],
+            to: [{ email: contact.email.email, name: contact.name }],
             subject,
             textContent: body,
             tags: ["vocallabs-outreach", contact.domain],
           }),
         3,
-        `Brevo:${contact.email}`,
+        `Brevo:${contact.email.email}`,
       );
 
       log.success(`  Sent! MessageId: ${response.data?.messageId}`);
       results.sent.push({ ...contact, subject, messageId: response.data?.messageId });
     } catch (err) {
       const detail = err?.response?.data?.message ?? err.message;
-      log.error(`  Failed to send to ${contact.email}: ${detail}`);
+      log.error(`  Failed to send to ${contact.email.email}: ${detail}`);
       results.failed.push({ ...contact, error: detail });
     }
 

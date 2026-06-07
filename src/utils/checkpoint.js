@@ -28,7 +28,7 @@ export async function safetyCheckpoint(contacts, dryRun) {
       c.name,
       c.title || "—",
       c.company,
-      c.email,
+      c.email.email,
       confidenceBadge(c.emailConfidence),
     ]),
   ];
