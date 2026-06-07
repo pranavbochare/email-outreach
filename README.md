@@ -1,57 +1,59 @@
-# Vocallabs · Automated Outreach Pipeline
+### Automated Outreach Pipeline
 
-> **One input. Four stages. Zero human touchpoints.**
+# Working -> One input. Four stages. Zero human touchpoints
+
 > Type a domain. The pipeline does the rest — finding lookalikes, surfacing decision-makers, resolving verified emails, and firing personalized outreach — automatically.
 
----
+# Architecture
 
-## Architecture
-
-```
-[Human] company.domain
+    company.domain
           │
           ▼
 ┌─────────────────────┐
-│  Stage 1 · Ocean.io │  seed domain → lookalike company domains
+│ Stage 1 · Ocean.io │ seed domain → lookalike company domains
 └──────────┬──────────┘
-           │  [{ domain, name, industry, size }]
-           ▼
+│ [{ domain, name, industry, size }]
+▼
 ┌──────────────────────┐
-│  Stage 2 · Prospeo   │  domains → C-suite/VP contacts + LinkedIn URLs
+│ Stage 2 · Prospeo │ domains → C-suite/VP contacts + LinkedIn URLs
 └──────────┬───────────┘
-           │  [{ name, title, linkedinUrl, company, ... }]
-           ▼
+│ [{ name, title, linkedinUrl, company, ... }]
+▼
 ┌───────────────────────┐
-│  Stage 3 · Eazyreach  │  LinkedIn URLs → verified work emails
+│ Stage 3 · Eazyreach │ LinkedIn URLs → verified work emails -> done by prospeo
 └──────────┬────────────┘
-           │  [{ ...contact, email, confidence }]
-           ▼
+│ [{ ...contact, email, confidence }]
+▼
 ┌──────────────────────────┐
-│  ⚠ Safety Checkpoint     │  human reviews summary, confirms send
+│ ⚠ Safety Checkpoint │ human reviews summary, confirms send
 └──────────┬───────────────┘
-           │  confirmed
-           ▼
+│ confirmed
+▼
 ┌───────────────────────┐
-│  Stage 4 · Brevo      │  sends personalized cold email per contact
+│ Stage 4 · Brevo │ sends personalized cold email per contact
 └───────────────────────┘
-           │
-           ▼
-  reports/outreach-report-<timestamp>.json
-```
+│
+▼
+reports
+
+# concept
 
 Every stage's output is the next stage's input. No manual copy-paste. No spreadsheets. One command runs the whole chain.
 
----
+# Quick Start
 
-## Quick Start
+# create company email
 
-### 1. Install dependencies
+- using namecheap for domain name
+- using cloudflare for email routing
+
+# 1. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 2. Configure environment
+# 2. Configure environment
 
 ```bash
 cp .env.example .env
@@ -60,14 +62,14 @@ cp .env.example .env
 Open `.env` and fill in your API keys:
 
 | Variable             | Where to get it                                              |
-| -------------------- | ------------------------------------------------------------ |
+| -------------------- | ------------------------------------------------------------ | 
 | `OCEAN_API_KEY`      | [ocean.io](https://ocean.io) → Settings → API                |
 | `PROSPEO_API_KEY`    | [app.prospeo.io/api](https://app.prospeo.io/api)             |
-| `EAZYREACH_API_KEY`  | [eazyreach.app](https://eazyreach.app) → API                 |
+| `EAZYREACH_API_KEY`  | [eazyreach.app](https://eazyreach.app) → API                 | -> not in use but added 
 | `BREVO_API_KEY`      | [app.brevo.com](https://app.brevo.com) → Settings → API Keys |
 | `BREVO_SENDER_EMAIL` | Your verified sender email in Brevo                          |
 
-### 3. Run the pipeline
+# 3. Run the pipeline
 
 ```bash
 # Interactive (will prompt for domain)
@@ -78,20 +80,16 @@ node src/index.js stripe.com
 
 # Dry run — simulates everything, skips actual sending
 DRY_RUN=true node src/index.js stripe.com
-```
 
----
+# Project Structure
 
-## Project Structure
-
-```
 vocallabs-outreach/
 ├── src/
 │   ├── index.js                  ← orchestrator / entry point
 │   ├── stages/
 │   │   ├── 01-ocean.js           ← Stage 1: lookalike discovery
 │   │   ├── 02-prospeo.js         ← Stage 2: decision-maker search
-│   │   ├── 03-eazyreach.js       ← Stage 3: email resolution
+│   │   ├── 03-eazyreach.js       ← Stage 3: email resolution   -> done buy prospeo
 │   │   └── 04-brevo.js           ← Stage 4: outreach delivery
 │   └── utils/
 │       ├── logger.js             ← pretty terminal output
@@ -105,36 +103,23 @@ vocallabs-outreach/
 ├── .env.example
 ├── package.json
 └── README.md
-```
 
----
+# Why one stage = one file?
 
-## Design Decisions
+- Each stage is independently testable and swappable. If Ocean.io's API changes or you want to replace Prospeo with Apollo, you touch exactly one file.
 
-### Why one stage = one file?
-
-Each stage is independently testable and swappable. If Ocean.io's API changes or you want to replace Prospeo with Apollo, you touch exactly one file.
-
-### Retry + rate-limit handling
-
-`src/utils/http.js` wraps every API call with:
-
-- **3 automatic retries** with exponential back-off on transient failures
-- **Respects `Retry-After` headers** on 429 responses
-- **Configurable delay** between calls via `RATE_LIMIT_DELAY_MS`
-
-### Resilience to messy data
+# Resilience to messy data
 
 - Missing LinkedIn URLs → contact skipped, rest of pipeline continues
 - Invalid/undeliverable emails → dropped before the send stage
 - Any single-company failure in Stage 2/3 → logged and skipped; pipeline doesn't crash
 - Duplicate LinkedIn profiles → de-duplicated before email resolution
 
-### Safety checkpoint
+# Safety checkpoint
 
-Before any email fires, the pipeline pauses and displays a table of every recipient (name, title, company, email, confidence score). The user must explicitly confirm. Set `DRY_RUN=true` to simulate the full run without ever sending.
+- Before any email fires, the pipeline pauses and displays a table of every recipient (name, title, company, email, confidence score). The user must explicitly confirm. Set `DRY_RUN=true` to simulate the full run without ever sending.
 
-### Email personalization
+# Email personalization
 
 `src/utils/emailCopy.js` generates copy that's specific to each contact:
 
@@ -147,8 +132,6 @@ Before any email fires, the pipeline pauses and displays a table of every recipi
 
 Every run writes a timestamped JSON to `reports/` with the full summary — what was sent, to whom, message IDs, and any failures. Useful for follow-up tracking.
 
----
-
 ## Configuration Reference
 
 All options live in `.env`:
@@ -160,7 +143,6 @@ All options live in `.env`:
 | `RATE_LIMIT_DELAY_MS`      | `1000`  | ms pause between API calls         |
 | `DRY_RUN`                  | `false` | Skip actual email send when `true` |
 
----
 
 ## Edge Cases Handled
 
@@ -175,38 +157,8 @@ All options live in `.env`:
 | Network timeout                   | 3 retries with back-off, then error logged  |
 | Duplicate LinkedIn profiles       | De-duplicated after Stage 2                 |
 
----
+# Improvements
 
-## Live Demo Checklist
-
-Before the interview:
-
-- [ ] `.env` filled with real API keys
-- [ ] Brevo sender email verified
-- [ ] Eazyreach credits loaded
-- [ ] Test run with `DRY_RUN=true` completed successfully
-- [ ] Know your seed domain (pick a company you'd realistically target)
-
-During the demo:
-
-```bash
-node src/index.js yourtarget.com
-```
-
-Walk through each stage as it fires. At the checkpoint, review the table live, then confirm.
-
----
-
-## Extending the Pipeline
-
-Want to add a stage or swap a provider?
-
-1. Create `src/stages/05-yourservice.js` with a named export function
-2. Import it in `src/index.js` and call it after Stage 4
-3. The output shape is just a plain JS array of objects — no framework lock-in
-
----
-
-# how to run - directory -> vocallabs-outreach
-
-node src/index.js stripe.com
+- can take help of AI to write personalized emails.
+- if we want to handle maximum companies and contacts then efficient code structure.
+- we can add ui to enter company name and show all history of emails send instead of brevo.
